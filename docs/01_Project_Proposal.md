@@ -6,7 +6,7 @@ Allyson Aoki
 
 ---
 ## Overview
-The BioMotion Light System is an ESP32-based embedded platform that creates dynamic LED lighting effects based on physiological and motion data. The system monitors the wearer's heart rate using a MAX30102 optical sensor and body movement using an MPU6500 inertial meaurement unit (IMU). These inputs are processed in real time to generate responsive lighting animations on an addressable SK6812 LED strip.
+The BioMotion Light System is an ESP32-based embedded platform that creates dynamic LED lighting effects based on physiological and motion data. The system monitors the wearer's heart rate using a MAX30102 optical sensor and body movement using an MPU6500 inertial measurement unit (IMU). These inputs are processed in real time to generate responsive lighting animations on an addressable SK6812 LED strip.
 
 A Bluetooth Low Energy (BLE) interface allows users to configure brightness, animation modes, color themes, and sensor sensitivity through a mobile application.
 
