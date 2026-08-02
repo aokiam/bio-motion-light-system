@@ -22,7 +22,7 @@ ESP32
  |--- MAX30102
  |--- MPU6500
  |--- BLE
- |--- SK6812
+ |--- WS2812B
 ```
 ---
 ## Data Flow
@@ -37,7 +37,7 @@ The IMU follows the same processing pipeline and contributes additional movement
 | MAX30102 | I2C |
 | MPU6500 | I2C |
 | Mobile App | BLE |
-| SK6812 LEDs | Single-wire data|
+| WS2812B LEDs | Single-wire data|
 
 ---
 ## Timing Requirements

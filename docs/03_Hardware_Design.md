@@ -9,7 +9,7 @@ The hardware consists of a rechargable power subsystem, an ESP32 microcontroller
 | ESP32-WROOM-32D | Main Controller |
 | MAX30102 | Heart rate sensing |
 | MPU6500 | Motion sensing |
-| SK6812 LEDs | Lighting |
+| WS2812B LEDs | Lighting |
 | TP4056 | Battery charging |
 | MT3608 | 5V boost converter |
 | AMS 1117 | 3.3V regulator |
@@ -53,7 +53,7 @@ Both sensors share the same I2C bus.
 
 ---
 ## LED Interface
-The SK6812 LED strip is driven using a single GPIO pin.
+The WS2812B LED strip is driven using a single GPIO pin.
 Recommended protection:
 - 330 Ω resistor on data line
 - 1000 µF capacitor across 5V input
