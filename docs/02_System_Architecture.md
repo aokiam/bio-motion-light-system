@@ -8,25 +8,19 @@ The system consitis of five primary subsystems:
 5. Bluetooth Interface
 
 ```
-Battery
+Power Bank
     |
-TP4065 Carger
-    |
-+5V   ------------> LED Strip
-    |
-AMS1117
-    |
-+3.3V
-    |
-ESP32
+ESP32 3.3V Rail
  |--- MAX30102
  |--- MPU6500
  |--- BLE
- |--- SK6812
+ |--- WS2812B
+ESP32 VIN (5V) Rail
+ |--- LED Strip
 ```
 ---
 ## Data Flow
-Heart Rate Sensor -> Sensor Manager -> State Machine -> Animation Engine -> LED Driver -> SK6812 LEDs
+Heart Rate Sensor -> Sensor Manager -> State Machine -> Animation Engine -> LED Driver -> WS2812B LEDs
 
 The IMU follows the same processing pipeline and contributes additional movement information used by the animation engine.
 
@@ -37,7 +31,7 @@ The IMU follows the same processing pipeline and contributes additional movement
 | MAX30102 | I2C |
 | MPU6500 | I2C |
 | Mobile App | BLE |
-| SK6812 LEDs | Single-wire data|
+| WS2812B LEDs | Single-wire data|
 
 ---
 ## Timing Requirements

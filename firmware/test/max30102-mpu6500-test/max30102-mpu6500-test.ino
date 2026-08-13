@@ -126,11 +126,3 @@ void loop() {
 
   delay(200);
 }
-
-// Expected
-// - Stage 1 prints "FOUND" for both sensors and moves on automatically.
-// - Stage 2 streams live data. At rest, flat on a table, az should read
-//   close to 1.00g and gyro values should sit near 0. Tilting or rotating
-//   the board should visibly change the accel/gyro numbers.
-// - With no finger on the MAX30102, IR stays low. Resting a fingertip on
-//   it should push IR above 50000 and show "[finger detected]".
