@@ -1,0 +1,61 @@
+name: Deploy to GitHub Pages
+
+# Runs automatically on every push to main, and can also be triggered
+# manually from the Actions tab on GitHub (the workflow_dispatch line).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Required for the deploy-pages action to be allowed to publish
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Prevents two deploys from running at the same time and colliding
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # Caches node_modules between runs based on package-lock.json,
+          # so future builds install faster.
+          cache: 'npm'
+          cache-dependency-path: mobile-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build output as a Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Vite's build output folder - this is what actually gets published
+          path: mobile-app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
