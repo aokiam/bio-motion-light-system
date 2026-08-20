@@ -1,50 +1,59 @@
 import { useState, useRef, useCallback } from 'react'
+import { Bluetooth, Heart  } from 'lucide-react'
+import { IconWalk } from '@tabler/icons-react';
 import './App.css'
 
-// Same UUIDs as cosplay_prop_ble_full.ino - keep these in sync if you change the firmware.
-// If a UUID here doesn't exactly match the #define in the .ino, getCharacteristic()
-// below will throw "characteristic not found" - that's the #1 thing to check if
-// connect succeeds but a specific control silently does nothing.
-const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b'
-const BRIGHTNESS_CHAR_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8'
-const ANIM_MODE_CHAR_UUID = '0a3b0f1e-6b0a-4a6a-9a3a-3e6b1a2c4d5e'
-const HEART_RATE_CHAR_UUID = '6b3f1a4c-2d5e-4f6a-8b9c-1a2b3c4d5e6f'
-const COLOR_CHAR_UUID = '9c1e2f3a-4b5c-4d6e-8f7a-1b2c3d4e5f6a'
-const HR_INPUT_CHAR_UUID = '2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6b'
-const MOTION_INPUT_CHAR_UUID = '5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d'
+// same UUIDS as used in the .ino file
+const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+const BRIGHTNESS_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+const ANIM_MODE_CHAR_UUID = "0a3b0f1e-6b0a-4a6a-9a3a-3e6b1a2c4d5e"
+const HEART_RATE_CHAR_UUID = "6b3f1a4c-2d5e-4f6a-8b9c-1a2b3c4d5e6f"
+const COLOR_CHAR_UUID = "9c1e2f3a-4b5c-4d6e-8f7a-1b2c3d4e5f6a"
+const HR_INPUT_CHAR_UUID = "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6b"
+const MOTION_INPUT_CHAR_UUID = "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d"
 
-const COLORS = ['#ffffff', '#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#0a84ff', '#af52de', '#ff2d92']
+const COLORS = ['#ffffff', '#00bfff', '#ffea00', '#9b54ff', '#ff54c0']
 
+// animation choices in the dropdown menu
+// label is on the UI, value is sent to the ESP32
 const ANIM_MODES = [
   { label: 'Heartbeat pulse', value: 'pulse' },
   { label: 'Slash sweep', value: 'slash' },
+  { label: 'Dynamic', value: 'dynamic'},
 ]
 
+// draws the Bluetooth symbol; color changes based on connection status
 function BluetoothIcon({ connected }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={connected ? '#34c759' : '#666'} strokeWidth="2">
-      <path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
+    <Bluetooth
+      size={16}
+      color={connected ? '#34c749' : '#666'}
+      strokeWidth={1}
+    />
+  );
 }
 
 function HeartIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="#9a9a9a">
-      <path d="M12 21s-6.7-4.35-9.3-8.1C.9 10.1 1.4 6.6 4.2 5c2-1.15 4.4-.55 5.7 1.1.4.5.7 1 1.1 1.6.4-.6.7-1.1 1.1-1.6C13.4 4.45 15.8 3.85 17.8 5c2.8 1.6 3.3 5.1 1.5 7.9C16.7 16.65 12 21 12 21z" />
-    </svg>
-  )
+    <Heart
+      size={28}
+      color={'#ffffff'}
+      strokeWidth={3}
+    />
+  );
 }
 
 function WalkingIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9a9a9a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="13.5" cy="4" r="1.8" fill="#9a9a9a" stroke="none" />
-      <path d="M11 8l3 1.5 2 4M14 9.5l-1.5 4-3.5 2M14 9.5l2.5.5 2 3.5M8.5 21l2-5.5-1-3" />
-    </svg>
+    <IconWalk 
+      size={28}
+      color={'#ffffff'}
+      stroke={3}
+    />
   )
 }
 
+// main React component that renders the UI
 export default function App() {
   const [connected, setConnected] = useState(false)
   const [connecting, setConnecting] = useState(false)
@@ -57,9 +66,7 @@ export default function App() {
   const [heartRateInput, setHeartRateInput] = useState(true)
   const [motionInput, setMotionInput] = useState(true)
 
-  // Refs (not state) because these hold live BLE objects, not UI data -
-  // storing them as state would cause pointless re-renders every time
-  // we grab a new characteristic during connect.
+  // hold live BLE objects 
   const brightnessCharRef = useRef(null)
   const animModeCharRef = useRef(null)
   const colorCharRef = useRef(null)
@@ -86,10 +93,6 @@ export default function App() {
       const server = await device.gatt.connect()
       const service = await server.getPrimaryService(SERVICE_UUID)
 
-      // Grab every characteristic up front, once, right after connecting -
-      // each of these fails loudly (throws, caught below) if a UUID here
-      // doesn't match one the ESP32 actually created, which is the
-      // fastest way to catch a copy-paste UUID mismatch during testing.
       brightnessCharRef.current = await service.getCharacteristic(BRIGHTNESS_CHAR_UUID)
       animModeCharRef.current = await service.getCharacteristic(ANIM_MODE_CHAR_UUID)
       colorCharRef.current = await service.getCharacteristic(COLOR_CHAR_UUID)
@@ -143,8 +146,7 @@ export default function App() {
     }
   }
 
-  // Converts a "#rrggbb" hex string (what the swatches store) into the
-  // 3-byte [R, G, B] array the firmware's ColorCallbacks expects.
+  // converts a rrggbb hex string into the 3-byte [R, G, B] array
   const hexToRgbBytes = (hex) => {
     const clean = hex.replace('#', '')
     const r = parseInt(clean.substring(0, 2), 16)
@@ -190,7 +192,7 @@ export default function App() {
     <div className="phone">
       <div className="header">
         <h1>
-          <span className="header-bold">Cosplay</span> <span className="header-light">Orfevre</span>
+          <span className="header-bold">Cosplay</span> <span className="header-light">Mizuki</span>
         </h1>
         <button className="conn-pill" onClick={connected ? handleDisconnect : handleConnect} disabled={connecting}>
           <BluetoothIcon connected={connected} />
