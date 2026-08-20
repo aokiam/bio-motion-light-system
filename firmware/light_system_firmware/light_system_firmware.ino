@@ -68,7 +68,7 @@ const unsigned long SLASH_TRAIL_MS = 1000;
 
 // ----------------- MPU6500 helpers ------------------
 bool mpuPresent() {
-  Wire.beingTransmission(MPU_ADDR);
+  Wire.beginTransmission(MPU_ADDR);
   return (Wire.endTransmission() == 0);
 }
 
