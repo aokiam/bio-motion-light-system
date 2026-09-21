@@ -371,7 +371,9 @@ void loop() {
 
   // --- State transitions, skipped while a slash animation is actively playing ---
   if (currentState != SLASH_ANIM) {
-    if (currentAnimMode == MODE_SLASH) {
+    if (currentAnimMode == MODE_STATIC) {
+      currentState = STATIC_ON;
+    } else if (currentAnimMode == MODE_SLASH) {
       // Slash-only mode has no baseline animation - just idle off between triggers
       currentState = IDLE_OFF;
     } else {
