@@ -175,7 +175,7 @@ class BrightnessCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *characteristic) {
     String value = characteristic->getValue();
     if (value.length() > 0) {
-      uint8_t brightness = (uint8_t)value[0];
+      globalBrightness = (uint8_t)value[0];
       Serial.print("Brightness set to: ");
       Serial.println(globalBrightness);
     }

@@ -178,7 +178,7 @@ export default function App() {
     setAnimMode(value)
     if (animModeCharRef.current) {
       try {
-        await queueWrite(() => animModeCharRef.current/writeValue(new TextEncoder().encode(value)))
+        await queueWrite(() => animModeCharRef.current.writeValue(new TextEncoder().encode(value)))
       } catch (err) {
         setError('Failed to write animation mode: ' + err.message)
       }
