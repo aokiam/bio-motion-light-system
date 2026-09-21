@@ -36,8 +36,8 @@ BLECharacteristic *motionInputChar;
 bool deviceConnected = false;
 
 // live settings; what the BLE callbacks actually change
-enum AnimMode { MODE_PULSE, MODE_SLASH, MODE_DYNAMIC };
-AnimMode currentAnimMode = MODE_DYNAMIC;
+enum AnimMode { MODE_STATIC, MODE_PULSE, MODE_SLASH, MODE_DYNAMIC };
+AnimMode currentAnimMode = MODE_STATIC;
 
 uint8_t globalBrightness = 128;
 uint32_t activeColor = 0x00BFFF;
@@ -53,7 +53,7 @@ int beatAvg = 0;
 bool fingerPresent = false;
 
 // LED state machine
-enum LedState { IDLE_OFF, SEARCHING, BPM_PULSE, SLASH_ANIM };
+enum LedState { IDLE_OFF, SEARCHING, BPM_PULSE, SLASH_ANIM, STATIC_ON };
 LedState currentState = IDLE_OFF;
 LedState stateBeforeSlash = IDLE_OFF;
 
@@ -190,7 +190,9 @@ class AnimModeCallbacks : public BLECharacteristicCallbacks {
       Serial.print("[ANIMATION] set to: ");
       Serial.println(value);
       
-      if (value == "pulse") {
+      if (value == "static"){
+        currentAnimMode = MODE_STATIC;
+      }else if (value == "pulse") {
         currentAnimMode = MODE_PULSE;
       } else if (value == "slash") {
         currentAnimMode = MODE_SLASH;
@@ -389,6 +391,13 @@ void loop() {
     case IDLE_OFF:
       strip.clear();
       break;
+    case STATIC_ON: {
+      uint32_t c = scaledColor(activeColor, 1.0);
+      for (int i = 0; i < NUM_LEDS; i++) {
+        strip.setPixelColor(i, c);
+      }
+      break;
+    }
     case SEARCHING:
       updatePulse(2500);
       break;

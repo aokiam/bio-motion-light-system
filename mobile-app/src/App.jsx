@@ -17,6 +17,7 @@ const COLORS = ['#ffffff', '#00bfff', '#ffea00', '#9b54ff', '#ff54c0']
 // animation choices in the dropdown menu
 // label is on the UI, value is sent to the ESP32
 const ANIM_MODES = [
+  { label: 'Static', value: 'static'}
   { label: 'Heartbeat pulse', value: 'pulse' },
   { label: 'Slash sweep', value: 'slash' },
   { label: 'Dynamic', value: 'dynamic'},
@@ -164,7 +165,7 @@ export default function App() {
     setBrightness(value)
     if (brightnessCharRef.current) {
       const byteValue = Math.round((value / 100) * 255)
-      twriteBrightness(async (v) => {
+      writeBrightness(async (v) => {
         try {
           await brightnessCharRef.current.writeValue(new Uint8Array([v]))
         } catch (err) {
