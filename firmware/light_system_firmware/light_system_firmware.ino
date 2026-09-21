@@ -177,8 +177,7 @@ class BrightnessCallbacks : public BLECharacteristicCallbacks {
     if (value.length() > 0) {
       uint8_t brightness = (uint8_t)value[0];
       Serial.print("Brightness set to: ");
-      Serial.println(brightness);
-      // TODO: apply it to actual LED strip
+      Serial.println(globalBrightness);
     }
   }
 };

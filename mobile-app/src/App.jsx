@@ -22,6 +22,41 @@ const ANIM_MODES = [
   { label: 'Dynamic', value: 'dynamic'},
 ]
 
+// since Web Bluetooth only allows one in-flight GATT operation per device at a time, this
+// queues overlapping writeValue() calls and chains them in a queue
+function useGattWriteQueue() {
+  const queueRef = useRef(Promise.resolve())
+  return useCallback((writeFn) => {
+    const run = queueRef.current.then(writeFn, writeFn)
+    queueRef.current = run.catch(() => {})
+    return run
+  }, [])
+}
+
+// wraps a slider drag so onthe the most recent value is actually sent (values queued behind are dropped)
+function useCoalescedWriter(queueWrite){
+  const pendingRef = useRef(null)
+  const writingRef = useRef(false)
+
+  return useCallback(
+    async (writeFn, value) => {
+      pendingRef.current = value
+      if (writingRef.current) return
+      writingRef.current = true
+      try {
+        while (pendingRef.current !== null) {
+          const toSend = pendingRef. current
+          pendingRef.current = null
+          await queueWrite(() => writeFn(toSend))
+        }
+      } finally {
+        writingRef.current = false
+      }
+    },
+    [queueWrite]
+  )
+}
+
 // draws the Bluetooth symbol; color changes based on connection status
 function BluetoothIcon({ connected }) {
   return (
@@ -73,6 +108,8 @@ export default function App() {
   const hrInputCharRef = useRef(null)
   const motionInputCharRef = useRef(null)
   const deviceRef = useRef(null)
+  const queueWrite = useGattWriteQueue()
+  const writeBrightness = useCoalescedWriter(queueWrite)
 
   const handleConnect = useCallback(async () => {
     setError('')
@@ -127,11 +164,13 @@ export default function App() {
     setBrightness(value)
     if (brightnessCharRef.current) {
       const byteValue = Math.round((value / 100) * 255)
-      try {
-        await brightnessCharRef.current.writeValue(new Uint8Array([byteValue]))
-      } catch (err) {
-        setError('Failed to write brightness: ' + err.message)
-      }
+      twriteBrightness(async (v) => {
+        try {
+          await brightnessCharRef.current.writeValue(new Uint8Array([v]))
+        } catch (err) {
+          setError('Failed to write brightness: ' + err.message)
+        }
+      }, byteValue)
     }
   }
 
@@ -139,7 +178,7 @@ export default function App() {
     setAnimMode(value)
     if (animModeCharRef.current) {
       try {
-        await animModeCharRef.current.writeValue(new TextEncoder().encode(value))
+        await queueWrite(() => animModeCharRef.current/writeValue(new TextEncoder().encode(value)))
       } catch (err) {
         setError('Failed to write animation mode: ' + err.message)
       }
@@ -159,7 +198,7 @@ export default function App() {
     setSelectedColor(color)
     if (colorCharRef.current) {
       try {
-        await colorCharRef.current.writeValue(hexToRgbBytes(color))
+        await queueWrite(() => colorCharRef.current.writeValue(hexToRgbBytes(color)))
       } catch (err) {
         setError('Failed to write color: ' + err.message)
       }
@@ -170,7 +209,7 @@ export default function App() {
     setHeartRateInput(checked)
     if (hrInputCharRef.current) {
       try {
-        await hrInputCharRef.current.writeValue(new Uint8Array([checked ? 1 : 0]))
+        await queueWrite(() => hrInputCharRef.current.writeValue(new Uint8Array([checked ? 1 : 0])))
       } catch (err) {
         setError('Failed to write heart rate input toggle: ' + err.message)
       }
@@ -181,7 +220,7 @@ export default function App() {
     setMotionInput(checked)
     if (motionInputCharRef.current) {
       try {
-        await motionInputCharRef.current.writeValue(new Uint8Array([checked ? 1 : 0]))
+        await queueWrite(() => motionInputCharRef.current.writeValue(new Uint8Array([checked ? 1 : 0])))
       } catch (err) {
         setError('Failed to write motion input toggle: ' + err.message)
       }
