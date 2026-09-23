@@ -118,7 +118,7 @@ bool checkForSlash() {
 void updateWalkingState() {
   float gx, gy, gz;
   mpuReadGyro(gx, gy, gz);
-  float magnitude = sqrt(gz * gz + gy * gy + gz * gz);
+  float magnitude = sqrt(gx * gx + gy * gy + gz * gz);
 
   motionEMA = (MOTION_EMA_ALPHA * magnitude) + ((1.0 - MOTION_EMA_ALPHA) * motionEMA);
 

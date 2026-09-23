@@ -241,7 +241,7 @@ export default function App() {
         setError('Failed to write motion input toggle: ' + err.message)
       }
     }
-    await writeDerivedAnimMode(heartRateInput, input)
+    await writeDerivedAnimMode(heartRateInput, checked)
   }
 
   return (
