@@ -33,6 +33,7 @@ BLECharacteristic *heartRateChar;
 BLECharacteristic *colorChar;
 BLECharacteristic *hrInputChar;
 BLECharacteristic *motionInputChar;
+BLECharacteristic *motionStateChar;
 
 bool deviceConnected = false;
 
@@ -71,7 +72,7 @@ const unsigned long SLASH_TRAIL_MS = 1000;
 float motionEMA = 0.0;
 const float MOTION_EMA_ALPHA = 0.2;
 const float WALK_ENTER_THRESHOLD = 40.0;
-cosnt float WALK_EXIT_THRESHOLD = 20.0;
+const float WALK_EXIT_THRESHOLD = 20.0;
 bool isWalking = false;
 
 // ----------------- MPU6500 helpers ------------------
@@ -360,6 +361,12 @@ void setup() {
   motionInputChar->setCallbacks(new MotionInputCallbacks());
   uint8_t motionInputDefault = 1;
   motionInputChar->setValue(&motionInputDefault, 1);
+
+  motionStateChar = service->createCharacteristic(
+    MOTION_STATE_CHAR_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  motionStateChar->addDescriptor(new BLE2902());
+  uint8_t motionStateDefault = 0; // idle
+  motionStateChar->setValue(&motionStateDefault, 1);
 
   service->start();
 
