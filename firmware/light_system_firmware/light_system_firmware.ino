@@ -25,6 +25,7 @@ Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 #define COLOR_CHAR_UUID         "9c1e2f3a-4b5c-4d6e-8f7a-1b2c3d4e5f6a"
 #define HR_INPUT_CHAR_UUID      "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6b"
 #define MOTION_INPUT_CHAR_UUID  "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d"
+#define MOTION_STATE_CHAR_UUID  "3bddb61d-67dc-40e0-9da9-bc49426116e9"
 
 BLECharacteristic *brightnessChar;
 BLECharacteristic *animModeChar;
@@ -66,6 +67,13 @@ unsigned long slashStartTime = 0;
 const unsigned long SLASH_STEP_MS = 40;
 const unsigned long SLASH_TRAIL_MS = 1000;
 
+// walking vs. idle detection
+float motionEMA = 0.0;
+const float MOTION_EMA_ALPHA = 0.2;
+const float WALK_ENTER_THRESHOLD = 40.0;
+cosnt float WALK_EXIT_THRESHOLD = 20.0;
+bool isWalking = false;
+
 // ----------------- MPU6500 helpers ------------------
 bool mpuPresent() {
   Wire.beginTransmission(MPU_ADDR);
@@ -106,6 +114,29 @@ bool checkForSlash() {
   return false;
 }
 
+void updateWalkingState() {
+  float gx, gy, gz;
+  mpuReadGyro(gx, gy, gz);
+  float magnitude = sqrt(gz * gz + gy * gy + gz * gz);
+
+  motionEMA = (MOTION_EMA_ALPHA * magnitude) + ((1.0 - MOTION_EMA_ALPHA) * motionEMA);
+
+  bool wasWalking = isWalking;
+  if (!isWalking && motionEMA > WALK_ENTER_THRESHOLD) {
+    isWalking = true;
+  } else if (isWalking && motionEMA < WALK_EXIT_THRESHOLD) {
+    isWalking = false;
+  }
+
+  if (isWalking != wasWalking && deviceConnected) {
+    uint8_t stateByte = isWalking ? 1 : 0;
+    motionStateChar->setValue(&stateByte, 1);
+    motionStateChar->notify();
+    Serial.print("[MOTION STATE] ");
+    Serial.println(isWalking ? "Walking" : "idle");
+  }
+}
+
 // ----------------- PULSE animation ------------------
 unsigned long pulsePeriod(int bpm) {
   if (bpm < 60)  return 1800;
@@ -123,12 +154,28 @@ uint32_t scaledColor(uint32_t color, float scale) {
   return strip.Color(r, g, b);
 }
 
-void updatePulse(unsigned long period) {
-  float phase = (millis() % period) / (float)period;
-  float brightness = (sin(phase * 2 * PI) * 0.5) + 0.5;
+void updatePulse(unsigned long period, float minScale) {
+  static float phase = 0.0;
+  static unsigned long activePeriod = period;
+  static float activeMinScale = minScale;
+  static unsigned long lastUpdateMs = 0;
+
+  unsigned long now = millis();
+  if (lastUpdateMs == 0) lastUpdateMs = now;
+
+  phase += (now - lastUpdateMs) / (float)activePeriod;
+  lastUpdateMs = now;
+
+  if (phase >= 1.0) {
+    activePeriod = period;
+    activeMinScale = minScale;
+  }
+
+  float wave = (1.0 - cos(phase * 2 * PI)) / 2.0;
+  float brightness = activeMinScale + (1.0 - activeMinScale) * wave;
   uint32_t c = scaledColor(activeColor, brightness);
   for (int i = 0; i < NUM_LEDS; i++) {
-    strip.setPixelColor(i, c);
+    strip.setPixelColor(i,c);
   }
 }
 
@@ -192,7 +239,7 @@ class AnimModeCallbacks : public BLECharacteristicCallbacks {
       
       if (value == "static"){
         currentAnimMode = MODE_STATIC;
-      }else if (value == "pulse") {
+      } else if (value == "pulse") {
         currentAnimMode = MODE_PULSE;
       } else if (value == "slash") {
         currentAnimMode = MODE_SLASH;
@@ -347,7 +394,7 @@ void loop() {
       }
     }
 
-    // Push the current BPM to the phone once per second, same as before
+    // Push the current BPM to the phone once per second
     static unsigned long lastNotify = 0;
     if (deviceConnected && millis() - lastNotify > 1000) {
       lastNotify = millis();
@@ -401,10 +448,10 @@ void loop() {
       break;
     }
     case SEARCHING:
-      updatePulse(2500);
+      updatePulse(2500, 0.0);
       break;
     case BPM_PULSE:
-      updatePulse(pulsePeriod(beatAvg));
+      updatePulse(pulsePeriod(beatAvg), 0.8);
       break;
     case SLASH_ANIM:
       if (!updateSlashAnimation()) {

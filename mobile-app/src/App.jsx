@@ -11,8 +11,9 @@ const HEART_RATE_CHAR_UUID = "6b3f1a4c-2d5e-4f6a-8b9c-1a2b3c4d5e6f"
 const COLOR_CHAR_UUID = "9c1e2f3a-4b5c-4d6e-8f7a-1b2c3d4e5f6a"
 const HR_INPUT_CHAR_UUID = "2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f6b"
 const MOTION_INPUT_CHAR_UUID = "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d"
+const MOTION_STATE_CHAR_UUID = "3bddb61d-67dc-40e0-9da9-bc49426116e9"
 
-const COLORS = ['#ffffff', '#00bfff', '#ffea00', '#9b54ff', '#ff54c0']
+const COLORS = ['#00bfff', '#ffea00', '#9b54ff', '#ff54c0', '#ffffff']
 
 // animation choices in the dropdown menu
 // label is on the UI, value is sent to the ESP32
@@ -23,6 +24,13 @@ const ANIM_MODES = [
   { label: 'Dynamic', value: 'dynamic'},
 ]
 
+
+const deriveAnimMode = (hrEnabled, motionEnabled) => {
+  if (hrEnabled && motionEnabled) return 'dynamic'
+  if (hrEnabled) return 'pulse'
+  if (motionEnabled) return 'slash'
+  return 'static'
+}
 // since Web Bluetooth only allows one in-flight GATT operation per device at a time, this
 // queues overlapping writeValue() calls and chains them in a queue
 function useGattWriteQueue() {
@@ -98,7 +106,7 @@ export default function App() {
   const [motionState, setMotionState] = useState('Idle')
   const [brightness, setBrightness] = useState(50)
   const [selectedColor, setSelectedColor] = useState(COLORS[0])
-  const [animMode, setAnimMode] = useState('pulse')
+  const [animMode, setAnimMode] = useState('static')
   const [heartRateInput, setHeartRateInput] = useState(true)
   const [motionInput, setMotionInput] = useState(true)
 
@@ -136,13 +144,17 @@ export default function App() {
       colorCharRef.current = await service.getCharacteristic(COLOR_CHAR_UUID)
       hrInputCharRef.current = await service.getCharacteristic(HR_INPUT_CHAR_UUID)
       motionInputCharRef.current = await service.getCharacteristic(MOTION_INPUT_CHAR_UUID)
+      motionStateCharRef.current = await service.getCharacteristic(MOTION_STATE_CHAR_UUID)
       const heartRateChar = await service.getCharacteristic(HEART_RATE_CHAR_UUID)
 
       await heartRateChar.startNotifications()
       heartRateChar.addEventListener('characteristicvaluechanged', (event) => {
-        const bpm = event.target.value.getUint8(0)
-        setHeartRate(bpm)
-        setMotionState(bpm > 0 ? 'Reading' : 'Idle')
+        setHeartRate(event.target.value.getUint8(0))
+      })
+
+      await motionStateCharRef.current.startNotifications()
+      motionStateCharRef.current.addEventListener('characteristicvaluechanged', (event) => {
+        setMotionState(event.target.value.getUint8(0) == 1 ? 'Walking' : 'Idle')
       })
 
       setConnected(true)
@@ -174,18 +186,7 @@ export default function App() {
       }, byteValue)
     }
   }
-
-  const handleAnimModeChange = async (value) => {
-    setAnimMode(value)
-    if (animModeCharRef.current) {
-      try {
-        await queueWrite(() => animModeCharRef.current.writeValue(new TextEncoder().encode(value)))
-      } catch (err) {
-        setError('Failed to write animation mode: ' + err.message)
-      }
-    }
-  }
-
+  
   // converts a rrggbb hex string into the 3-byte [R, G, B] array
   const hexToRgbBytes = (hex) => {
     const clean = hex.replace('#', '')
@@ -206,6 +207,18 @@ export default function App() {
     }
   }
 
+  const writeDerivedAnimMode = async (hrEnabled, motionEnabled) => {
+    const mode = deriveAnimMode(hrEnabled, motionEnabled)
+    setAnimMode(mode)
+    if (animModeCharRef.current) {
+      try {
+        await queueWrite(() => animModeCharRef.current.writeValue(new TextEncoder().encode(mode)))
+      } catch (err) {
+        setError('Failed to write animation mode:' + err.message)
+      }
+    }
+  }
+
   const handleHeartRateInputToggle = async (checked) => {
     setHeartRateInput(checked)
     if (hrInputCharRef.current) {
@@ -215,6 +228,7 @@ export default function App() {
         setError('Failed to write heart rate input toggle: ' + err.message)
       }
     }
+    await writeDerivedAnimMode(heartRateInput, checked)
   }
 
   const handleMotionInputToggle = async (checked) => {
@@ -226,6 +240,7 @@ export default function App() {
         setError('Failed to write motion input toggle: ' + err.message)
       }
     }
+    await writeDerivedAnimMode(motionInput, checked)
   }
 
   return (
@@ -288,14 +303,10 @@ export default function App() {
       </div>
 
       <div className="section">
-        <span className="section-label">Animation Mode</span>
-        <select className="dropdown" value={animMode} onChange={(e) => handleAnimModeChange(e.target.value)}>
-          {ANIM_MODES.map((mode) => (
-            <option key={mode.value} value={mode.value}>
-              {mode.label}
-            </option>
-          ))}
-        </select>
+        <div className="selection-label-row">
+          <span className="section-label">Animation Mode</span>
+          <span className="section-value">{ANIM_MODES.find((m) => m.value === animMode)?.label}</span>
+        </div>
       </div>
 
       <div className="toggle-row">
