@@ -107,8 +107,8 @@ export default function App() {
   const [brightness, setBrightness] = useState(50)
   const [selectedColor, setSelectedColor] = useState(COLORS[0])
   const [animMode, setAnimMode] = useState('static')
-  const [heartRateInput, setHeartRateInput] = useState(true)
-  const [motionInput, setMotionInput] = useState(true)
+  const [heartRateInput, setHeartRateInput] = useState(false)
+  const [motionInput, setMotionInput] = useState(false)
 
   // hold live BLE objects 
   const brightnessCharRef = useRef(null)
@@ -116,6 +116,7 @@ export default function App() {
   const colorCharRef = useRef(null)
   const hrInputCharRef = useRef(null)
   const motionInputCharRef = useRef(null)
+  const motionStateCharRef = useRef(null)
   const deviceRef = useRef(null)
   const queueWrite = useGattWriteQueue()
   const writeBrightness = useCoalescedWriter(queueWrite)
@@ -186,7 +187,7 @@ export default function App() {
       }, byteValue)
     }
   }
-  
+
   // converts a rrggbb hex string into the 3-byte [R, G, B] array
   const hexToRgbBytes = (hex) => {
     const clean = hex.replace('#', '')
@@ -228,7 +229,7 @@ export default function App() {
         setError('Failed to write heart rate input toggle: ' + err.message)
       }
     }
-    await writeDerivedAnimMode(heartRateInput, checked)
+    await writeDerivedAnimMode(checked, motionInput)
   }
 
   const handleMotionInputToggle = async (checked) => {
@@ -240,7 +241,7 @@ export default function App() {
         setError('Failed to write motion input toggle: ' + err.message)
       }
     }
-    await writeDerivedAnimMode(motionInput, checked)
+    await writeDerivedAnimMode(heartRateInput, input)
   }
 
   return (
@@ -304,7 +305,7 @@ export default function App() {
 
       <div className="section">
         <div className="selection-label-row">
-          <span className="section-label">Animation Mode</span>
+          <span className="section-label">Animation Mode  |  </span>
           <span className="section-value">{ANIM_MODES.find((m) => m.value === animMode)?.label}</span>
         </div>
       </div>
