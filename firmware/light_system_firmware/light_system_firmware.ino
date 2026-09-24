@@ -159,7 +159,7 @@ void updatePulse(unsigned long period) {
   float phase = (millis() % period) / (float)period;
   float brightness = (sin(phase * 2 * PI) * 0.5) + 0.5;
   uint32_t c = scaledColor(activeColor, brightness);
-  for (int i = 0; i < NUM_LEDSl i++){
+  for (int i = 0; i < NUM_LEDS; i++){
     strip.setPixelColor(i, c);
   }
 }
