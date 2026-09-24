@@ -149,18 +149,6 @@ export default function App() {
   hrInputCharRef.current = await service.getCharacteristic(HR_INPUT_CHAR_UUID)
   motionInputCharRef.current = await service.getCharacteristic(MOTION_INPUT_CHAR_UUID)
   motionStateCharRef.current = await service.getCharacteristic(MOTION_STATE_CHAR_UUID)
-  await motionStateCharRef.current.startNotifications()
-  motionStateCharRef.current.addEventListener(
-    'characteristicvaluechanged',
-    (event) => {
-      const state = event.target.value.getUint8(0)
-      console.log("Received motion state: ", state === 1 ? "Walking" : "Idle")
-      setMotionState(state === 1? 'Walking' : 'Idle')
-    }
-  )
-  const motionValue = await motionStateCharRef.current.readValue()
-  setMotionState( motionValue.getUint8(0) === 1 ? 'Walking' : 'Idle')
-
   const heartRateChar = await service.getCharacteristic(HEART_RATE_CHAR_UUID)
   await heartRateChar.startNotifications()
   heartRateChar.addEventListener(
@@ -173,6 +161,18 @@ export default function App() {
   )
 
   setConnected(true)
+
+  await motionStateCharRef.current.startNotifications()
+  motionStateCharRef.current.addEventListener(
+    'characteristicvaluechanged',
+    (event) => {
+      const state = event.target.value.getUint8(0)
+      console.log("Received motion state: ", state === 1 ? "Walking" : "Idle")
+      setMotionState(state === 1? 'Walking' : 'Idle')
+    }
+  )
+  const motionValue = await motionStateCharRef.current.readValue()
+  setMotionState( motionValue.getUint8(0) === 1 ? 'Walking' : 'Idle')
     } catch (err) {
       setError(err.message || 'Connection failed or was cancelled.')
     } finally {
