@@ -155,28 +155,12 @@ uint32_t scaledColor(uint32_t color, float scale) {
   return strip.Color(r, g, b);
 }
 
-void updatePulse(unsigned long period, float minScale) {
-  static float phase = 0.0;
-  static unsigned long activePeriod = period;
-  static float activeMinScale = minScale;
-  static unsigned long lastUpdateMs = 0;
-
-  unsigned long now = millis();
-  if (lastUpdateMs == 0) lastUpdateMs = now;
-
-  phase += (now - lastUpdateMs) / (float)activePeriod;
-  lastUpdateMs = now;
-
-  if (phase >= 1.0) {
-    activePeriod = period;
-    activeMinScale = minScale;
-  }
-
-  float wave = (1.0 - cos(phase * 2 * PI)) / 2.0;
-  float brightness = activeMinScale + (1.0 - activeMinScale) * wave;
+void updatePulse(unsigned long period) {
+  float phase = (millis() % period) / (float)period;
+  float brightness = (sin(phase * 2 * PI) * 0.5) + 0.5;
   uint32_t c = scaledColor(activeColor, brightness);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    strip.setPixelColor(i,c);
+  for (int i = 0; i < NUM_LEDSl i++){
+    strip.setPixelColor(i, c);
   }
 }
 
@@ -433,7 +417,7 @@ void loop() {
     } else {
       // Pulse and Dynamic modes both use the heart-rate baseline
       if (!fingerPresent) {
-        currentState = IDLE_OFF;
+        currentState = STATIC_ON;
       } else if (beatAvg == 0) {
         currentState = SEARCHING;
       } else {
@@ -455,10 +439,10 @@ void loop() {
       break;
     }
     case SEARCHING:
-      updatePulse(2500, 0.0);
+      updatePulse(2500);
       break;
     case BPM_PULSE:
-      updatePulse(pulsePeriod(beatAvg), 0.8);
+      updatePulse(pulsePeriod(beatAvg));
       break;
     case SLASH_ANIM:
       if (!updateSlashAnimation()) {
