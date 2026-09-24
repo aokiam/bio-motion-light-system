@@ -134,7 +134,7 @@ void updateWalkingState() {
     motionStateChar->setValue(&stateByte, 1);
     motionStateChar->notify();
     Serial.print("[MOTION STATE] ");
-    Serial.println(isWalking ? "Walking" : "idle");
+    Serial.println(isWalking ? "Walking" : "Idle");
   }
 }
 
@@ -421,6 +421,11 @@ void loop() {
   }
   if (slashTriggered) {
     startSlashAnimation();
+  }
+
+  // --- Walk detection ---
+  if (deviceConnected) {
+    updateWalkingState;
   }
 
   // --- State transitions, skipped while a slash animation is actively playing ---
