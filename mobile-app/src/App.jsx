@@ -171,8 +171,7 @@ export default function App() {
       setMotionState(state === 1? 'Walking' : 'Idle')
     }
   )
-  const motionValue = await motionStateCharRef.current.readValue()
-  setMotionState( motionValue.getUint8(0) === 1 ? 'Walking' : 'Idle')
+
     } catch (err) {
       setError(err.message || 'Connection failed or was cancelled.')
     } finally {
