@@ -136,7 +136,7 @@ export default function App() {
       })
       deviceRef.current = device
       device.addEventListener('gattserverdisconnected', () => setConnected(false))
-
+/*
       const server = await device.gatt.connect()
       const service = await server.getPrimaryService(SERVICE_UUID)
 
@@ -159,7 +159,85 @@ export default function App() {
       })
 
       setConnected(true)
-    } catch (err) {
+*/
+  const server = await device.gatt.connect()
+  const service = await server.getPrimaryService(SERVICE_UUID)
+
+  console.log("Connected to GATT server")
+  console.log("Service:", service)
+
+  try {
+    brightnessCharRef.current =
+      await service.getCharacteristic(BRIGHTNESS_CHAR_UUID)
+    console.log("✓ Brightness characteristic found")
+  } catch (err) {
+    console.error("✗ Brightness characteristic NOT found", err)
+  }
+
+  try {
+    animModeCharRef.current =
+      await service.getCharacteristic(ANIM_MODE_CHAR_UUID)
+    console.log("✓ Animation characteristic found")
+  } catch (err) {
+    console.error("✗ Animation characteristic NOT found", err)
+  }
+
+  try {
+    colorCharRef.current =
+      await service.getCharacteristic(COLOR_CHAR_UUID)
+    console.log("✓ Color characteristic found")
+  } catch (err) {
+    console.error("✗ Color characteristic NOT found", err)
+  }
+
+  try {
+    hrInputCharRef.current =
+      await service.getCharacteristic(HR_INPUT_CHAR_UUID)
+    console.log("✓ HR input characteristic found")
+  } catch (err) {
+    console.error("✗ HR input characteristic NOT found", err)
+  }
+
+  try {
+    motionInputCharRef.current =
+      await service.getCharacteristic(MOTION_INPUT_CHAR_UUID)
+    console.log("✓ Motion input characteristic found")
+  } catch (err) {
+    console.error("✗ Motion input characteristic NOT found", err)
+  }
+
+  try {
+    motionStateCharRef.current =
+      await service.getCharacteristic(MOTION_STATE_CHAR_UUID)
+    console.log("✓ Motion state characteristic found")
+  } catch (err) {
+    console.error("✗ Motion state characteristic NOT found", err)
+  }
+
+  try {
+    const heartRateChar =
+      await service.getCharacteristic(HEART_RATE_CHAR_UUID)
+
+    console.log("✓ Heart rate characteristic found")
+
+    await heartRateChar.startNotifications()
+
+    heartRateChar.addEventListener(
+        'characteristicvaluechanged',
+        (event) => {
+          const bpm = event.target.value.getUint8(0)
+          console.log("Received BPM:", bpm)
+          setHeartRate(bpm)
+        }
+    )
+  } catch (err) {
+    console.error("✗ Heart rate characteristic NOT found", err)
+  }
+
+  setConnected(true)
+
+
+      } catch (err) {
       setError(err.message || 'Connection failed or was cancelled.')
     } finally {
       setConnecting(false)

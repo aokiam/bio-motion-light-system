@@ -43,8 +43,8 @@ AnimMode currentAnimMode = MODE_STATIC;
 
 uint8_t globalBrightness = 128;
 uint32_t activeColor = 0x00BFFF;
-bool heartRateInputEnabled = true;
-bool motionInputEnabled = true;
+bool heartRateInputEnabled = false;
+bool motionInputEnabled = false;
 
 // heart rate detection state
 const byte RATE_SIZE = 4;
@@ -156,10 +156,26 @@ uint32_t scaledColor(uint32_t color, float scale) {
 }
 
 void updatePulse(unsigned long period) {
-  float phase = (millis() % period) / (float)period;
-  float brightness = (sin(phase * 2 * PI) * 0.5) + 0.5;
-  uint32_t c = scaledColor(activeColor, brightness);
-  for (int i = 0; i < NUM_LEDS; i++){
+  static unsigned long activePeriod = period;
+  static float phase = 0.0;
+  static unsigned long lastMs = 0;
+
+  unsigned long now = millis();
+  if (lastMs == 0) lastMs = now;
+
+  phase += (now - lastMs) / (float)activePeriod;
+  lastMs = now;
+  if (phase >= 1.0) phase -= 1.0;
+
+  float wave = (sin(phase * 2 * PI) * 0.5) + 0.5;
+
+  // Rate only changes when brightness output is 0
+  if (wave <= 0.01 && globalBrightness == 0) {
+    activePeriod = period;
+  }
+
+  uint32_t c = scaledColor(activeColor, wave);
+  for (int i = 0; i < NUM_LEDS; i++) {
     strip.setPixelColor(i, c);
   }
 }
