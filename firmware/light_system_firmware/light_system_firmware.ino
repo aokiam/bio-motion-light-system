@@ -326,7 +326,7 @@ void setup() {
   BLEServer *server = BLEDevice::createServer();
   server->setCallbacks(new ServerCallbacks());
 
-  BLEService *service = server->createService(SERVICE_UUID);
+  BLEService *service = server->createService(BLEUUID(SERVICE_UUID), 30);
 
   brightnessChar = service->createCharacteristic(
     BRIGHTNESS_CHAR_UUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
@@ -425,7 +425,7 @@ void loop() {
 
   // --- Walk detection ---
   if (deviceConnected) {
-    updateWalkingState;
+    updateWalkingState();
   }
 
   // --- State transitions, skipped while a slash animation is actively playing ---

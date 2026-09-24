@@ -172,6 +172,14 @@ export default function App() {
     }
   )
 
+  await new Promise(r => setTimeout(r, 200))
+  try {
+    const motionValue = await motionStateCharRef.current.readValue()
+    setMotionState( motionValue.getUint8(0) === 1 ? 'Walking' : 'Idle')
+  } catch (err) {
+    setError(err.message || 'Initial motion read')
+  }
+
     } catch (err) {
       setError(err.message || 'Connection failed or was cancelled.')
     } finally {
