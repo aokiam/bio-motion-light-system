@@ -49,12 +49,6 @@ Both sensors share the same I2C bus.
 ---
 ## LED Interface
 The WS2812B LED strip is driven using a single GPIO pin.
-<<<<<<< HEAD
-=======
-Recommended protection:
-- 330 Ω resistor on data line
-- 1000 µF capacitor across 5V input
->>>>>>> 4d88ec08d6901f317757a8ecc8b70e3ebece8073
 
 ---
 ## Design Considerations

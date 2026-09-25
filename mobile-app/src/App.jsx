@@ -325,7 +325,7 @@ export default function App() {
       </div>
 
       <div className="section">
-        <div className="selection-label-row">
+        <div className="section-label-row">
           <span className="section-label">Animation Mode  |  </span>
           <span className="section-value">{ANIM_MODES.find((m) => m.value === animMode)?.label}</span>
         </div>

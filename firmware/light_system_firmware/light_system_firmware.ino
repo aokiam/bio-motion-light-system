@@ -387,6 +387,7 @@ void loop() {
   if (wantsHeartRate) {
     long irValue = particleSensor.getIR();
     fingerPresent = irValue > 50000;
+    bool beatUpdated = false;
 
     if (fingerPresent && checkForBeat(irValue)) {
       long delta = millis() - lastBeat;
@@ -398,12 +399,14 @@ void loop() {
         int sum = 0;
         for (byte x = 0; x < RATE_SIZE; x++) sum += rates[x];
         beatAvg = sum / RATE_SIZE;
+        beatUpdated = true;
       }
     }
 
     // Push the current BPM to the phone once per second
     static unsigned long lastNotify = 0;
-    if (deviceConnected && millis() - lastNotify > 1000) {
+    const unsigned long MIN_NOTIFY_INTERVAL = 200;
+    if (deviceConnected && beatUpdated && millis() - lastNotify > MIN_NOTIFY_INTERVAL) {
       lastNotify = millis();
       uint8_t bpmByte = (uint8_t)beatAvg;
       heartRateChar->setValue(&bpmByte, 1);
